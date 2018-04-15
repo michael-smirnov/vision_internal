@@ -3,7 +3,7 @@
 
 int main(int argc, char* argv[])
 {
-    char* video_file = "/home/smirnov-ma/internal/vision_internal/videos/2.mp4";
+    char* video_file = argv[1];
     const int AVERAGE_FRAMES = 60;
 
 	AverageCalculator calculator(AVERAGE_FRAMES);

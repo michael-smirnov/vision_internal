@@ -47,19 +47,19 @@ float median(const cv::Mat& m)
 
 void mean_stddev(const cv::Mat& src, cv::Mat& mean, cv::Mat& stddev, int window_size)
 {
-	float n = window_size * window_size;
+	double n = window_size * window_size;
 
-	cv::Mat kernel = cv::Mat::zeros(window_size + 1, window_size + 1, CV_32F);
-	kernel.at<float>(0, 0) = 1.0f / n;
-	kernel.at<float>(0, window_size) = -1.0f / n;
-	kernel.at<float>(window_size, 0) = -1.0f / n;
-	kernel.at<float>(window_size, window_size) = 1.0f / n;
+	cv::Mat kernel = cv::Mat::zeros(window_size + 1, window_size + 1, CV_64F);
+	kernel.at<double>(0, 0) = 1.0 / n;
+	kernel.at<double>(0, window_size) = -1.0 / n;
+	kernel.at<double>(window_size, 0) = -1.0 / n;
+	kernel.at<double>(window_size, window_size) = 1.0 / n;
 
 	cv::Mat sum;
 	cv::Mat sqsum;
 
 	cv::integral(src, sum, sqsum);
-	sum.convertTo(sum, CV_32FC3);
+	sum.convertTo(sum, CV_64FC3);
 
 	cv::filter2D(sum, mean, -1, kernel);
 	cv::filter2D(sqsum, stddev, -1, kernel);
@@ -68,8 +68,12 @@ void mean_stddev(const cv::Mat& src, cv::Mat& mean, cv::Mat& stddev, int window_
 	stddev = stddev - mean.mul(mean);
 	cv::sqrt(stddev, stddev);
 
-	mean = mean({ 0, mean.rows - 1 }, { 0, mean.cols - 1 });
-	stddev = stddev({ 0, stddev.rows - 1 }, { 0, stddev.cols - 1 });
+	auto offset = window_size / 2 + 1;
+	auto m = mean({ offset, mean.rows - offset - 1 }, { offset, mean.cols - offset - 1 }).clone();
+	auto s = stddev({ offset, stddev.rows - offset - 1 }, { offset, stddev.cols - offset - 1 }).clone();
+
+	cv::copyMakeBorder(s, stddev, offset, offset, offset, offset, cv::BORDER_CONSTANT, { 0.0 });
+	cv::copyMakeBorder(m, mean, offset, offset, offset, offset, cv::BORDER_CONSTANT, { 0.0 });
 }
 
 cv::Mat calc_countours(const cv::Mat& src, int range)
@@ -82,7 +86,7 @@ cv::Mat calc_countours(const cv::Mat& src, int range)
 	cv::medianBlur(src, src_median, range);
 	src_median.convertTo(src_median, CV_64FC3);
 
-	cv::Mat countours;
+	cv::Mat countours = src_stddev;
 	cv::divide(src_median.mul(src_stddev), src_mean, countours);
 	countours.convertTo(countours, CV_8UC3);
 
@@ -151,8 +155,10 @@ bool read_frame(cv::Mat& src, cv::VideoCapture& capture)
 
 cv::Mat calc_crosses(const cv::Mat& src)
 {
-    static auto vertical_filter = generate_by_row( {0.0f, 3.0f, -6.0f, 3.0f, 0.0f}
-                /*{ 0.0f, 1.0f, 4.0f, -1.0f, -8.0f, -1.0f, 4.0f, 1.0f, 0.0f }*/);
+    static auto vertical_filter = generate_by_row( 
+				{0.0f, 3.0f, -6.0f, 3.0f, 0.0f}
+                /*{ 0.0f, 1.0f, 4.0f, -1.0f, -8.0f, -1.0f, 4.0f, 1.0f, 0.0f }*/
+	);
     static auto horizontal_filter = vertical_filter.t();
     cv::Mat crosses;
     cv::Mat h_lines, v_lines;
@@ -164,4 +170,33 @@ cv::Mat calc_crosses(const cv::Mat& src)
     cv::bitwise_and(h_lines, v_lines, crosses);
 
     return crosses;
+}
+
+cv::Mat derivative(const cv::Mat & src, int window_size)
+{
+	std::vector<float> v;
+
+	for (int i = 0; i < window_size / 2; i++)
+		v.push_back(-1.0f);
+	v.push_back(0.0f);
+	for (int i = 0; i < window_size / 2; i++)
+		v.push_back(1.0f);
+
+	cv::Mat vert = generate_by_row(v);
+	cv::Mat hori = vert.t();
+
+	cv::Mat conv_src;
+	src.convertTo(conv_src, CV_32F);
+
+	cv::Mat dx, dy;
+	cv::filter2D(conv_src, dx, -1, vert);
+	cv::filter2D(conv_src, dy, -1, hori);
+	dx /= (window_size - 1);
+	dy /= (window_size - 1);
+
+	cv::Mat magn = dx.mul(dx) + dy.mul(dy);
+	cv::Mat res;
+	cv::sqrt(magn, res);
+
+	return res;
 }

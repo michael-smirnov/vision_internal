@@ -25,9 +25,9 @@ void CallBackFunc(int event, int x, int y, int flags, void* userdata)
 	}
 }
 
-int main()
+int main(int argc, char* argv[])
 {
-    char* video_file = "/home/smirnov-ma/internal/vision_internal/videos/2.mp4";
+    char* video_file = argv[1];
 
 	cv::VideoCapture capture(video_file);
 	cv::Mat frame;

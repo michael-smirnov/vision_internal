@@ -12,3 +12,4 @@ void calc_local_max_deviation(float* data, uint32_t size, float dev_border, floa
 cv::Mat generate_by_row( const std::vector<float>& row );
 bool read_frame(cv::Mat& src, cv::VideoCapture& capture);
 cv::Mat calc_crosses(const cv::Mat& src);
+cv::Mat derivative(const cv::Mat& src, int window_size);
