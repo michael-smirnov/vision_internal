@@ -200,3 +200,18 @@ cv::Mat derivative(const cv::Mat & src, int window_size)
 
 	return res;
 }
+
+void min_gradient_direction(const cv::Matx33d &m, double (&directions)[8], int &min_index)
+{
+    double dirs[] = { m(0,0), m(0,1), m(0,2), m(1,2), m(2,2), m(2,1), m(2,0), m(1,0) };
+    double min = std::abs(m(1,1) - dirs[0]);
+    for(int i = 0; i < 8; i++)
+    {
+        directions[i] = std::abs(m(1,1) - dirs[i]);
+        if( directions[i] < min )
+        {
+            min = directions[i];
+            min_index = i;
+        }
+    }
+}

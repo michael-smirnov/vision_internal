@@ -45,86 +45,68 @@ int main(int argc, char* argv[])
         }
     }
 
-	cv::Mat grad_vert = generate_by_row({ -1.0f, -1.0f, 0.0f, 1.0f, 1.0f });
-	cv::Mat grad_hori = grad_vert.t();
+    cv::waitKey();
 
-	//cv::namedWindow("grad", CV_WINDOW_NORMAL);
-
-	std::vector<cv::Vec2d> directions = 
-	{
-		cv::Vec2d{ -1.0, -1.0 },
-		cv::Vec2d{ 0.0, -1.0 },
-		cv::Vec2d{ 1.0, -1.0 },
-		cv::Vec2d{ 1.0, 0.0 },
-		cv::Vec2d{ 1.0, 1.0 },
-		cv::Vec2d{ 0.0, 1.0 },
-		cv::Vec2d{ -1.0, 1.0 },
-		cv::Vec2d{ -1.0, 0.0 }
-	};
-
+    std::vector<cv::Vec3i> dir_vectors = {
+        { -1, -1 }, { 0, -1 }, { 1, -1 }, { 1, 0 },
+        { 1, 1 }, { 0, 1 }, { -1, 1 }, { -1, 0 }
+    };
 	cv::Mat trace = cv::Mat::zeros( countours.rows, countours.cols, CV_8U );
     for( auto p : singular_points )
     {
         std::cout << "(" << p.y << "," << p.x << ")" << std::endl;
 
 		cv::Point cur_point = p;
-
+        int last_dir = -1;
 		do
 		{
 			trace.at<uint8_t>(cur_point) = 255;
 			cv::imshow("trace", trace);
 
-			cv::Mat area = countours(cv::Rect{ cur_point.x - grad_vert.cols / 2, cur_point.y - grad_vert.rows / 2, grad_vert.cols, grad_vert.rows }).clone();
-			/*cv::imshow("grad", area);
-			cv::rectangle(img, cv::Rect{ p.x - grad_vert.cols / 2, p.y - grad_vert.rows / 2, grad_vert.cols, grad_vert.rows }, cv::Scalar(255, 0, 0));
-			cv::imshow("image", img);*/
-			area.convertTo(area, CV_32F);
+            cv::Matx33d area;
+            cv::Mat roi = countours(cv::Rect{ cur_point.x - 1, cur_point.y - 1, 3, 3 });
+            area = roi.clone();
+            double directions[8] = {};
+            int min_dir = 0;
 
-			auto mdx = area.mul(grad_vert);
-			auto mdy = area.mul(grad_hori);
+            min_gradient_direction( area, directions, min_dir );
 
-			auto dx = (cv::sum(mdx) / grad_vert.cols)[0];
-			auto dy = (cv::sum(mdy) / grad_vert.rows)[0];
+            if( last_dir >= 0 )
+            {
+                int left = last_dir > 0 ? last_dir - 1 : 7;
+                int right = last_dir < 7 ? last_dir + 1 : 0;
 
-			cv::Vec2d grad = { dx, dy };
-			grad = cv::normalize(grad);
-			cv::Vec2d dir = { grad[1], -grad[0] };
+                int min_ind_last = -1;
+                const int treshold = 20;
 
-			std::cout << "grad:" << grad << "dir:" << dir << std::endl;
+                if( directions[left] < treshold )
+                    min_ind_last = left;
+                if( directions[last_dir] < treshold && ( min_ind_last == -1 || directions[last_dir] < directions[min_ind_last] ) )
+                    min_ind_last = last_dir;
+                if( directions[right] < treshold && ( min_ind_last == -1 || directions[right] < directions[min_ind_last] ) )
+                    min_ind_last = right;
 
-			std::vector<int> possible_directions;
-			int best_direction = -1;
-			int best_value = 255;
+                if( min_ind_last != -1 )
+                    min_dir = min_ind_last;
+                else
+                {
+                    int r = std::abs(min_dir - last_dir);
+                    int dist = std::min(r, 8-r);
+                    if( dist > 2)
+                        break;
+                }
+            }
 
-			for (int i = 0; i < directions.size(); i++)
-			{
-				cv::Vec2d curdir = cv::normalize(directions[i]);
-				if (curdir.dot(dir) > 0.7 || curdir.dot(dir) < -0.7)
-				{
-					possible_directions.push_back(i);
-					int x = cur_point.x + directions[i][0];
-					int y = cur_point.y + directions[i][1];
+            std::cout << "dir:" << dir_vectors[min_dir] << std::endl;
 
-					int v_new = countours.at<uint8_t>( {x, y} );
-					int v_old = countours.at<uint8_t>( cur_point );
-					int dv = std::abs(v_new - v_old);
-					if ( dv < best_value)
-					{
-						best_value = dv;
-						best_direction = i;
-					}
-				}
-			}
-
-			if (best_direction == -1)
-				break;
-
-			cur_point.x += directions[best_direction][0];
-			cur_point.y += directions[best_direction][1];
+            cur_point.x += dir_vectors[min_dir][0];
+            cur_point.y += dir_vectors[min_dir][1];
+            last_dir = min_dir;
 			
-			cv::waitKey();
+            if( cv::waitKey(100) == 'q' )
+                break;
 		}
-		while (cur_point != p);
+        while (/*cur_point != p*/true);
     }
 
     cv::waitKey();

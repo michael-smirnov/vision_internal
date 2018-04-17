@@ -91,7 +91,7 @@ int main(int argc, char* argv[])
             countours.convertTo(countours, CV_8U);
 
 			cv::imshow("window", frame);
-            //cv::imshow("area", countours);
+            cv::imshow("area", countours);
             cv::imshow("lines", crosses);
 		}
 

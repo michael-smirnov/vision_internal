@@ -13,3 +13,4 @@ cv::Mat generate_by_row( const std::vector<float>& row );
 bool read_frame(cv::Mat& src, cv::VideoCapture& capture);
 cv::Mat calc_crosses(const cv::Mat& src);
 cv::Mat derivative(const cv::Mat& src, int window_size);
+void min_gradient_direction(const cv::Matx33d& m, double (&directions)[8], int& min_index);
