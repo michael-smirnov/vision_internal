@@ -148,7 +148,7 @@ bool read_frame(cv::Mat& src, cv::VideoCapture& capture)
     if (src.empty())
         return false;
 
-    cv::cvtColor(src, src, CV_BGR2GRAY);
+    cv::cvtColor(src, src, cv::COLOR_BGR2GRAY);
 
     return true;
 }
@@ -172,7 +172,7 @@ cv::Mat calc_crosses(const cv::Mat& src)
     return crosses;
 }
 
-cv::Mat derivative(const cv::Mat & src, int window_size)
+cv::Mat derivative(const cv::Mat& src, int window_size)
 {
 	std::vector<float> v;
 
@@ -201,17 +201,57 @@ cv::Mat derivative(const cv::Mat & src, int window_size)
 	return res;
 }
 
-void min_gradient_direction(const cv::Matx33d &m, double (&directions)[8], int &min_index)
+void max_gradient_direction(const cv::Matx33d &m, double (&directions)[8], int &max_index)
 {
-    double dirs[] = { m(0,0), m(0,1), m(0,2), m(1,2), m(2,2), m(2,1), m(2,0), m(1,0) };
-    double min = std::abs(m(1,1) - dirs[0]);
+    double dirs[] = { m(0,0), m(0,1), m(0,2), m(1,0), m(1,2), m(2,0), m(2,1), m(2,2) };
+    double max = dirs[0] / m(1,1);
     for(int i = 0; i < 8; i++)
     {
-        directions[i] = std::abs(m(1,1) - dirs[i]);
-        if( directions[i] < min )
+        directions[i] = dirs[i] / m(1,1);
+        if( directions[i] > max )
         {
-            min = directions[i];
-            min_index = i;
+            max = directions[i];
+            max_index = i;
         }
     }
+}
+
+cv::Vec2f scale_min_component_to_one(const cv::Vec2f v)
+{
+    float min = std::min(std::abs(v[0]), std::abs(v[1]));
+    return { v[0] / min, v[1] / min};
+}
+
+cv::Vec2f closest_direction(const cv::Vec2f v, int degree)
+{
+    int offset = degree / 2;
+    float max_value = std::max(std::abs(v[0]), std::abs(v[1]));
+    return cv::Vec2f{ v[0]/max_value*offset, v[1]/max_value*offset };
+
+    /*std::vector<cv::Vec2f> directions = {};
+
+    for(int col = -offset; col <= offset; col++)
+            directions.push_back({col, -offset});
+    for(int row = -offset+1; row <= offset-1; row++)
+    {
+            directions.push_back({-offset, row});
+            directions.push_back({offset, row});
+    }
+    for(int col = -offset; col <= offset; col++)
+            directions.push_back({col, offset});
+
+    float max_value = v.dot( directions[0] );
+    float max_index = 0;
+
+    for( int i = 1; i < directions.size(); i++ )
+    {
+        float tmp = v.dot( directions[i] );
+        if( tmp > max_value )
+        {
+            max_value = tmp;
+            max_index = i;
+        }
+    }
+
+    return directions[ max_index ];*/
 }

@@ -7,6 +7,8 @@ StaticLibrary {
 
     files: [
         "AverageCalculator.h",
+        "ComponentMarker.cpp",
+        "ComponentMarker.h",
         "functions.h",
         "AverageCalculator.cpp",
         "functions.cpp",
