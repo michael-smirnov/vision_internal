@@ -156,8 +156,8 @@ bool read_frame(cv::Mat& src, cv::VideoCapture& capture)
 cv::Mat calc_crosses(const cv::Mat& src)
 {
     static auto vertical_filter = generate_by_row( 
-				{0.0f, 3.0f, -6.0f, 3.0f, 0.0f}
-                /*{ 0.0f, 1.0f, 4.0f, -1.0f, -8.0f, -1.0f, 4.0f, 1.0f, 0.0f }*/
+                /*{0.0f, 3.0f, -6.0f, 3.0f, 0.0f}*/
+                { 0.0f, 1.0f, 4.0f, -1.0f, -8.0f, -1.0f, 4.0f, 1.0f, 0.0f }
 	);
     static auto horizontal_filter = vertical_filter.t();
     cv::Mat crosses;

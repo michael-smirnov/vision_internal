@@ -6,6 +6,7 @@
 const std::string wnd_countours = "countours";
 const std::string wnd_area = "area";
 const std::string wnd_trace = "trace";
+const std::string wnd_crosses = "crosses";
 
 cv::Point2i get_first_point( const cv::Mat& img, int offset, int value_threshold )
 {
@@ -82,7 +83,7 @@ void trace( const cv::Mat& img, const cv::Point& start_point, cv::Mat& tr, const
 
     for(int i = 0; i < 8; i++)
     {
-        if( dirs[i] > 0.85 && pts[i] != last_point && tr.at<uint8_t>( pts[i] ) == 0 )
+        if( dirs[i] > 0.70 && pts[i] != last_point && tr.at<uint8_t>( pts[i] ) == 0 )
             trace( img, pts[i], tr, start_point );
     }
 }
@@ -92,19 +93,23 @@ int main(int argc, char* argv[])
     cv::namedWindow(wnd_countours, cv::WINDOW_NORMAL);
     cv::namedWindow(wnd_area, cv::WINDOW_NORMAL);
     cv::namedWindow(wnd_trace, cv::WINDOW_NORMAL);
+    cv::namedWindow(wnd_crosses, cv::WINDOW_NORMAL);
 
     cv::Mat img = cv::imread(argv[1]);
     cv::Mat img_gray;
     cv::cvtColor(img, img_gray, cv::COLOR_BGR2GRAY);
 
-    cv::Mat countours = calc_countours(img_gray, 5);
+    cv::Mat countours = calc_countours(img_gray, 3);
     cv::Mat tr = cv::Mat::zeros(countours.rows, countours.cols, CV_8U);
     auto start_point = get_start_point( countours );
     trace( countours, start_point, tr );
 
+    cv::Mat crosses = calc_crosses( img_gray );
+
     cv::imshow(wnd_countours, countours);
     cv::imshow(wnd_area, countours({start_point.x-3, start_point.y-3, 7, 7}));
     cv::imshow(wnd_trace, tr);
+    cv::imshow(wnd_crosses, crosses);
     cv::waitKey();
 
     return 0;
