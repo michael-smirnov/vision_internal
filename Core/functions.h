@@ -28,4 +28,6 @@ cv::Vec2f scale_min_component_to_one(const cv::Vec2f v);
 
 cv::Vec2f closest_direction(const cv::Vec2f v, int degree);
 
+std::vector<cv::Vec2f> all_directions( int degree );
+
 

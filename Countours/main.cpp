@@ -1,14 +1,18 @@
 #include "functions.h"
 #include "ComponentMarker.h"
+#include "TraceFinder.h"
 #include <iostream>
 #include <vector>
 
-const std::string wnd_countours = "countours";
-const std::string wnd_area = "area";
-const std::string wnd_trace = "trace";
-const std::string wnd_crosses = "crosses";
+using namespace std;
+using namespace cv;
 
-cv::Point2i get_first_point( const cv::Mat& img, int offset, int value_threshold )
+const string wnd_countours = "countours";
+const string wnd_area = "area";
+const string wnd_trace = "trace";
+const string wnd_crosses = "crosses";
+
+Point2i get_first_point( const Mat& img, int offset, int value_threshold )
 {
     for(int i = offset; i < img.rows - offset; i++)
     {
@@ -23,61 +27,59 @@ cv::Point2i get_first_point( const cv::Mat& img, int offset, int value_threshold
     return {-1, -1};
 }
 
-cv::Point2i get_start_point( const cv::Mat& image )
+Point2i get_start_point( const Mat& image )
 {
     constexpr int value_threshold = 50;
     constexpr int range = 5;
     constexpr int offset = range / 2;
 
-    cv::Mat dx = generate_by_row({-1.0f, -1.0f, 0.0f, 1.0f, 1.0f});
-    cv::Mat dy = dx.t();
+    Mat dx = generate_by_row({-1.0f, -1.0f, 0.0f, 1.0f, 1.0f});
+    Mat dy = dx.t();
 
     auto start_point = get_first_point( image, offset, value_threshold );
 
-    cv::Mat area;
+    Mat area;
     image({ start_point.x - offset, start_point.y-offset, range, range }).convertTo(area, CV_32F);
 
-    float dx_value = cv::sum(dx.mul(area))[0] / range;
-    float dy_value = cv::sum(dy.mul(area))[0] / range;
-    cv::Vec2f first_grad = closest_direction(cv::Vec2f{ dx_value, dy_value }, 3);
-    cv::Vec2f cur_grad = first_grad;
-    cv::Point2i cur_point = start_point;
+    float dx_value = sum(dx.mul(area))[0] / range;
+    float dy_value = sum(dy.mul(area))[0] / range;
+    Vec2f first_grad = closest_direction(Vec2f{ dx_value, dy_value }, 3);
+    Vec2f cur_grad = first_grad;
+    Point2i cur_point = start_point;
 
-    while( cv::normalize( cur_grad ).dot( cv::normalize( first_grad) ) > 0.5 )
+    while( normalize( cur_grad ).dot( normalize( first_grad ) ) > 0.5 )
     {
         cur_point.x += cur_grad[0];
         cur_point.y += cur_grad[1];
 
         image({ cur_point.x-offset, cur_point.y-offset, range, range }).convertTo(area, CV_32F);
-        float dx_value = cv::sum(dx.mul(area))[0] / range;
-        float dy_value = cv::sum(dy.mul(area))[0] / range;
+        float dx_value = sum(dx.mul(area))[0] / range;
+        float dy_value = sum(dy.mul(area))[0] / range;
 
-        cur_grad = closest_direction(cv::Vec2f{ dx_value, dy_value }, 3);
+        cur_grad = closest_direction(Vec2f{ dx_value, dy_value }, 3);
     }
 
     return cur_point;
 }
 
-void trace( const cv::Mat& img, const cv::Point& start_point, cv::Mat& tr, const cv::Point& last_point = {0, 0} )
+void trace( const Mat& img, const Point& start_point, Mat& tr, const Point& last_point = {0, 0} )
 {
     double dirs[8] = {};
-    cv::Point pts[8] =
+    Point pts[8] =
     {
-        cv::Point{ start_point.x-1, start_point.y-1},
-        cv::Point{ start_point.x, start_point.y-1},
-        cv::Point{ start_point.x+1, start_point.y-1},
-        cv::Point{ start_point.x-1, start_point.y},
-        cv::Point{ start_point.x+1, start_point.y},
-        cv::Point{ start_point.x-1, start_point.y+1},
-        cv::Point{ start_point.x, start_point.y+1},
-        cv::Point{ start_point.x+1, start_point.y+1}
+        Point{ start_point.x-1, start_point.y-1},
+        Point{ start_point.x, start_point.y-1},
+        Point{ start_point.x+1, start_point.y-1},
+        Point{ start_point.x-1, start_point.y},
+        Point{ start_point.x+1, start_point.y},
+        Point{ start_point.x-1, start_point.y+1},
+        Point{ start_point.x, start_point.y+1},
+        Point{ start_point.x+1, start_point.y+1}
     };
 
     int max_index = 0;
 
     tr.at<uint8_t>( start_point ) = 255;
-    //cv::imshow(wnd_trace, tr);
-    //cv::waitKey(10);
 
     max_gradient_direction( img({start_point.x-1, start_point.y-1, 3, 3}), dirs, max_index );
 
@@ -90,27 +92,37 @@ void trace( const cv::Mat& img, const cv::Point& start_point, cv::Mat& tr, const
 
 int main(int argc, char* argv[])
 {
-    cv::namedWindow(wnd_countours, cv::WINDOW_NORMAL);
-    cv::namedWindow(wnd_area, cv::WINDOW_NORMAL);
-    cv::namedWindow(wnd_trace, cv::WINDOW_NORMAL);
-    cv::namedWindow(wnd_crosses, cv::WINDOW_NORMAL);
+    namedWindow(wnd_countours, WINDOW_NORMAL);
+    namedWindow(wnd_area, WINDOW_NORMAL);
+    namedWindow(wnd_trace, WINDOW_NORMAL);
+    namedWindow(wnd_crosses, WINDOW_NORMAL);
 
-    cv::Mat img = cv::imread(argv[1]);
-    cv::Mat img_gray;
-    cv::cvtColor(img, img_gray, cv::COLOR_BGR2GRAY);
+    Mat img = imread(argv[1]);
+    Mat img_gray;
+    cvtColor(img, img_gray, COLOR_BGR2GRAY);
 
-    cv::Mat countours = calc_countours(img_gray, 3);
-    cv::Mat tr = cv::Mat::zeros(countours.rows, countours.cols, CV_8U);
+    Mat countours = calc_countours(img_gray, 3);
+    Mat tr = Mat::zeros(countours.rows, countours.cols, CV_8U);
+
+
     auto start_point = get_start_point( countours );
     trace( countours, start_point, tr );
 
-    cv::Mat crosses = calc_crosses( img_gray );
+    Mat crosses = calc_crosses( img_gray );
+    TraceFinder tf { countours, crosses };
 
-    cv::imshow(wnd_countours, countours);
-    cv::imshow(wnd_area, countours({start_point.x-3, start_point.y-3, 7, 7}));
-    cv::imshow(wnd_trace, tr);
-    cv::imshow(wnd_crosses, crosses);
-    cv::waitKey();
+    auto p = tf.next_singular_point();
+    while( p.has_value() )
+    {
+        cout << *p << std::endl;
+        p = tf.next_singular_point();
+    }
+
+    imshow(wnd_countours, countours);
+    imshow(wnd_area, countours({start_point.x-3, start_point.y-3, 7, 7}));
+    imshow(wnd_trace, tr);
+    imshow(wnd_crosses, crosses);
+    waitKey();
 
     return 0;
 }

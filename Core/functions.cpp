@@ -201,7 +201,7 @@ cv::Mat derivative(const cv::Mat& src, int window_size)
 	return res;
 }
 
-void max_gradient_direction(const cv::Matx33d &m, double (&directions)[8], int &max_index)
+void max_gradient_direction(const cv::Matx33d& m, double (&directions)[8], int& max_index)
 {
     double dirs[] = { m(0,0), m(0,1), m(0,2), m(1,0), m(1,2), m(2,0), m(2,1), m(2,2) };
     double max = dirs[0] / m(1,1);
@@ -226,12 +226,18 @@ cv::Vec2f closest_direction(const cv::Vec2f v, int degree)
 {
     int offset = degree / 2;
     float max_value = std::max(std::abs(v[0]), std::abs(v[1]));
-    return cv::Vec2f{ v[0]/max_value*offset, v[1]/max_value*offset };
 
-    /*std::vector<cv::Vec2f> directions = {};
+    return cv::Vec2f{ v[0]/max_value*offset, v[1]/max_value*offset };
+}
+
+std::vector<cv::Vec2f> all_directions( int degree )
+{
+    std::vector<cv::Vec2f> directions = {};
+    int offset = degree / 2;
 
     for(int col = -offset; col <= offset; col++)
             directions.push_back({col, -offset});
+
     for(int row = -offset+1; row <= offset-1; row++)
     {
             directions.push_back({-offset, row});
@@ -240,18 +246,5 @@ cv::Vec2f closest_direction(const cv::Vec2f v, int degree)
     for(int col = -offset; col <= offset; col++)
             directions.push_back({col, offset});
 
-    float max_value = v.dot( directions[0] );
-    float max_index = 0;
-
-    for( int i = 1; i < directions.size(); i++ )
-    {
-        float tmp = v.dot( directions[i] );
-        if( tmp > max_value )
-        {
-            max_value = tmp;
-            max_index = i;
-        }
-    }
-
-    return directions[ max_index ];*/
+    return directions;
 }

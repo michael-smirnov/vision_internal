@@ -9,9 +9,12 @@ StaticLibrary {
         "AverageCalculator.h",
         "ComponentMarker.cpp",
         "ComponentMarker.h",
+        "TraceFinder.cpp",
+        "TraceFinder.h",
         "functions.h",
         "AverageCalculator.cpp",
         "functions.cpp",
+        "trace.h",
     ]
 
     cpp.includePaths: [
