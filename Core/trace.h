@@ -3,10 +3,11 @@
 #include <opencv2/core.hpp>
 #include <vector>
 
-struct trace
+namespace traverse
 {
-    cv::Point start;
-    cv::Point end;
-    std::vector<cv::Vec2i> directions;
-    bool completed = false;
-};
+    struct trace
+    {
+        cv::Point start;
+        std::vector<cv::Vec2f> directions;
+    };
+}

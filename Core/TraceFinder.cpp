@@ -131,3 +131,79 @@ vector<int> TraceFinder::local_directions( const Point& origin )
 
     return result;
 }
+
+int TraceFinder::global_direction( const Point& origin, const Vec2f direction )
+{
+    constexpr int dirs_count = 8;
+    double dirs[ dirs_count ] = {};
+    int max_index = -1;
+
+    max_gradient_direction( _countours({origin.x-1, origin.y-1, 3, 3}), dirs, max_index );
+
+    int best_direction = -1;
+    double best_value = 1.0;
+
+    for( int i = 0; i < dirs_count; i++ )
+    {
+        auto& v = _area3x3_vectors[i];
+
+        double direction_dot = normalize( direction ).dot( normalize(v) );
+        double direction_value = dirs[i];
+        double cur_value = (0.6*direction_dot + 0.4*direction_value);
+
+        if( cur_value > best_value &&
+            _spent_regular_points.find( { origin.x + v[0], origin.y + v[1] } ) == _spent_regular_points.end() )
+        {
+            best_direction = i;
+            best_value = cur_value;
+        }
+    }
+}
+
+void TraceFinder::traverse( traverse::trace& t )
+{
+    Point last_point = get_last_point( t );
+
+    if( _singulars.at<uint8_t>( last_point ) > _singular_point_threshold &&
+         _spent_singular_points.find( last_point ) == _spent_singular_points.end() )
+    {
+        return;
+    }
+    else
+    {
+        int dir = global_direction( last_point, t.directions.back() );
+        if( dir != -1 )
+        {
+            t.directions.push_back( _area3x3_vectors[ dir ] );
+            traverse( t );
+        }
+    }
+}
+
+Point TraceFinder::get_last_point( traverse::trace& t )
+{
+    Point last_point = t.start;
+
+    for( int i = 0; i < t.directions.size(); i++ )
+    {
+        auto& dir = t.directions[i];
+
+        last_point.x += dir[0];
+        last_point.y += dir[1];
+    }
+    return last_point;
+}
+
+void TraceFinder::mark_singular_area( const Point& origin )
+{
+    if( _singulars.at<uint8_t>( origin ) > _singular_point_threshold &&
+        _spent_singular_points.find( origin ) == _spent_singular_points.end() )
+    {
+        _spent_singular_points.insert( origin );
+
+        for( auto& dir : _area3x3_vectors )
+        {
+            mark_singular_area( { origin.x + dir[0], origin.y + dir[1] } );
+        }
+    }
+}
