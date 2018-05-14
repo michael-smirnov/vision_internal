@@ -102,26 +102,17 @@ int main(int argc, char* argv[])
     cvtColor(img, img_gray, COLOR_BGR2GRAY);
 
     Mat countours = calc_countours(img_gray, 3);
-    Mat tr = Mat::zeros(countours.rows, countours.cols, CV_8U);
-
-
-    auto start_point = get_start_point( countours );
-    trace( countours, start_point, tr );
-
+    //Mat tr = Mat::zeros(countours.rows, countours.cols, CV_8U);
     Mat crosses = calc_crosses( img_gray );
-    TraceFinder tf { countours, crosses };
-
-    auto p = tf.next_singular_point();
-    while( p.has_value() )
-    {
-        cout << *p << std::endl;
-        p = tf.next_singular_point();
-    }
 
     imshow(wnd_countours, countours);
-    imshow(wnd_area, countours({start_point.x-3, start_point.y-3, 7, 7}));
-    imshow(wnd_trace, tr);
     imshow(wnd_crosses, crosses);
+
+    TraceFinder tf { countours, crosses };
+    auto traces = tf.find_traces();
+    std::cout << traces.size() << std::endl;
+
+    //imshow(wnd_trace, tr);
     waitKey();
 
     return 0;

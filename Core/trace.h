@@ -3,7 +3,7 @@
 #include <opencv2/core.hpp>
 #include <vector>
 
-namespace traverse
+namespace vision
 {
     struct trace
     {

@@ -7,6 +7,8 @@ using namespace std;
 TraceFinder::TraceFinder( const Mat& countours , const Mat& singulars )
     : _singular_point_threshold(50)
 {
+    _tr = Mat::zeros(countours.rows, countours.cols, CV_8U);
+
     _area3x3_vectors = all_directions( 3 );
 
     countours.copyTo( _countours );
@@ -14,6 +16,32 @@ TraceFinder::TraceFinder( const Mat& countours , const Mat& singulars )
 
     singulars.copyTo( _singulars );
     _singulars.convertTo( _singulars, CV_8U );
+}
+
+std::vector<vision::trace> TraceFinder::find_traces()
+{
+    auto sp = next_singular_point();
+    while( sp != nullopt )
+    {
+        auto start_point = max_gradient_singular_point_in_area( sp.value() );
+        mark_singular_area( sp.value() );
+
+        for( auto& d : local_directions( start_point ) )
+        {
+            vision::trace tr;
+            tr.start = start_point;
+            tr.directions.push_back( d );
+
+            traverse( tr );
+
+            if( tr.directions.size() >= 10 )
+                _traces.push_back( tr );
+        }
+
+        sp = next_singular_point();
+    }
+
+    return _traces;
 }
 
 optional<Point> TraceFinder::next_singular_point()
@@ -26,7 +54,6 @@ optional<Point> TraceFinder::next_singular_point()
             if( _singulars.at<uint8_t>( current ) > _singular_point_threshold &&
                 _spent_singular_points.find( current ) == _spent_singular_points.end() )
             {
-                _spent_singular_points.insert( current );
                 return current;
             }
         }
@@ -59,6 +86,11 @@ Point TraceFinder::max_gradient_singular_point_in_area( const Point& start_singu
                   start_singular_point.y - offset,
                   degree,
                   degree } ).convertTo( area, CV_32F );
+    imshow( "area", _countours( { start_singular_point.x - offset,
+                                  start_singular_point.y - offset,
+                                  degree,
+                                  degree } ) );
+    waitKey();
 
     float dx_value = sum(dx.mul(area))[0] / degree;
     float dy_value = sum(dy.mul(area))[0] / degree;
@@ -69,7 +101,7 @@ Point TraceFinder::max_gradient_singular_point_in_area( const Point& start_singu
     float cur_norm = norm( cur_grad );
     Point2i cur_point = start_singular_point;
 
-    while( cos_between_vectors( first_grad, cur_grad ) > 0.7 && cur_norm > 10.0f )
+    while( cos_between_vectors( first_grad, cur_grad ) > 0.7 /*&& cur_norm > 10.0f*/ )
     {
         if( !is_singular( {cur_point.x + cur_grad[0], cur_point.y + cur_grad[1]} ) )
         {
@@ -101,6 +133,12 @@ Point TraceFinder::max_gradient_singular_point_in_area( const Point& start_singu
         cur_point.y += cur_grad[1];
 
         _countours({ cur_point.x-offset, cur_point.y-offset, degree, degree }).convertTo(area, CV_32F);
+        imshow( "area", _countours( { cur_point.x - offset,
+                                      cur_point.y - offset,
+                                      degree,
+                                      degree } ) );
+        waitKey();
+
         float dx_value = sum(dx.mul(area))[0] / degree;
         float dy_value = sum(dy.mul(area))[0] / degree;
 
@@ -158,11 +196,22 @@ int TraceFinder::global_direction( const Point& origin, const Vec2f direction )
             best_value = cur_value;
         }
     }
+
+    return best_direction;
 }
 
-void TraceFinder::traverse( traverse::trace& t )
+void TraceFinder::traverse( vision::trace& t )
 {
     Point last_point = get_last_point( t );
+
+    _tr.at<uint8_t>( last_point ) = 255;
+    _ar = _countours( { last_point.x - 2, last_point.y - 2, 5, 5 } );
+    cv::Mat cr = _singulars( { last_point.x - 2, last_point.y - 2, 5, 5 } );
+
+    imshow( "crosses", cr );
+    imshow( "trace", _tr );
+    imshow( "area", _ar );
+    cv::waitKey();
 
     if( _singulars.at<uint8_t>( last_point ) > _singular_point_threshold &&
          _spent_singular_points.find( last_point ) == _spent_singular_points.end() )
@@ -180,7 +229,7 @@ void TraceFinder::traverse( traverse::trace& t )
     }
 }
 
-Point TraceFinder::get_last_point( traverse::trace& t )
+Point TraceFinder::get_last_point( vision::trace& t )
 {
     Point last_point = t.start;
 

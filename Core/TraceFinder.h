@@ -7,14 +7,17 @@
 class TraceFinder
 {
 public:
-    TraceFinder( const cv::Mat& countours, const cv::Mat& singulars );
+    TraceFinder( const cv::Mat& countours,
+                 const cv::Mat& singulars );
+
+    std::vector<vision::trace> find_traces();
 
     std::optional<cv::Point> next_singular_point();
     cv::Point max_gradient_singular_point_in_area( const cv::Point& start_singular_point );
     std::vector<int> local_directions( const cv::Point& origin );
     int global_direction( const cv::Point& origin, const cv::Vec2f direction );
-    void traverse( traverse::trace& );
-    cv::Point get_last_point( traverse::trace& );
+    void traverse( vision::trace& );
+    cv::Point get_last_point( vision::trace& );
     void mark_singular_area( const cv::Point& origin );
 
 private:
@@ -31,7 +34,10 @@ private:
     cv::Mat _countours;
     cv::Mat _singulars;
 
-    std::vector<traverse::trace> _traces;
+    cv::Mat _tr;
+    cv::Mat _ar;
+
+    std::vector<vision::trace> _traces;
 
     std::unordered_set<cv::Point, PointHash> _spent_singular_points;
     std::unordered_set<cv::Point, PointHash> _spent_regular_points;
