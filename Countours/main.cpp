@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
     cvtColor(img, img_gray, COLOR_BGR2GRAY);
 
     Mat countours = calc_countours(img_gray, 3);
-    //Mat tr = Mat::zeros(countours.rows, countours.cols, CV_8U);
+    Mat tr = Mat::zeros(countours.rows, countours.cols, CV_8U);
     Mat crosses = calc_crosses( img_gray );
 
     imshow(wnd_countours, countours);
@@ -112,7 +112,22 @@ int main(int argc, char* argv[])
     auto traces = tf.find_traces();
     std::cout << traces.size() << std::endl;
 
-    //imshow(wnd_trace, tr);
+    for( auto& cur_trace: traces )
+    {
+        Point p = cur_trace.start;
+        tr.at<uint8_t>(p) = 255;
+
+        for( auto& d : cur_trace.directions )
+        {
+            p.x += d[0];
+            p.y += d[1];
+
+            tr.at<uint8_t>(p) = 255;
+        }
+
+    }
+
+    imshow(wnd_trace, tr);
     waitKey();
 
     return 0;

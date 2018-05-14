@@ -30,11 +30,11 @@ std::vector<vision::trace> TraceFinder::find_traces()
         {
             vision::trace tr;
             tr.start = start_point;
-            tr.directions.push_back( d );
+            tr.directions.push_back( _area3x3_vectors[d] );
 
             traverse( tr );
 
-            if( tr.directions.size() >= 10 )
+            if( tr.directions.size() >= 430 )
                 _traces.push_back( tr );
         }
 
@@ -86,11 +86,6 @@ Point TraceFinder::max_gradient_singular_point_in_area( const Point& start_singu
                   start_singular_point.y - offset,
                   degree,
                   degree } ).convertTo( area, CV_32F );
-    imshow( "area", _countours( { start_singular_point.x - offset,
-                                  start_singular_point.y - offset,
-                                  degree,
-                                  degree } ) );
-    waitKey();
 
     float dx_value = sum(dx.mul(area))[0] / degree;
     float dy_value = sum(dy.mul(area))[0] / degree;
@@ -133,11 +128,6 @@ Point TraceFinder::max_gradient_singular_point_in_area( const Point& start_singu
         cur_point.y += cur_grad[1];
 
         _countours({ cur_point.x-offset, cur_point.y-offset, degree, degree }).convertTo(area, CV_32F);
-        imshow( "area", _countours( { cur_point.x - offset,
-                                      cur_point.y - offset,
-                                      degree,
-                                      degree } ) );
-        waitKey();
 
         float dx_value = sum(dx.mul(area))[0] / degree;
         float dy_value = sum(dy.mul(area))[0] / degree;
@@ -179,7 +169,7 @@ int TraceFinder::global_direction( const Point& origin, const Vec2f direction )
     max_gradient_direction( _countours({origin.x-1, origin.y-1, 3, 3}), dirs, max_index );
 
     int best_direction = -1;
-    double best_value = 1.0;
+    double best_value = 0.8;
 
     for( int i = 0; i < dirs_count; i++ )
     {
@@ -204,14 +194,14 @@ void TraceFinder::traverse( vision::trace& t )
 {
     Point last_point = get_last_point( t );
 
-    _tr.at<uint8_t>( last_point ) = 255;
+    /*_tr.at<uint8_t>( last_point ) = 255;
     _ar = _countours( { last_point.x - 2, last_point.y - 2, 5, 5 } );
     cv::Mat cr = _singulars( { last_point.x - 2, last_point.y - 2, 5, 5 } );
 
     imshow( "crosses", cr );
     imshow( "trace", _tr );
     imshow( "area", _ar );
-    cv::waitKey();
+    cv::waitKey();*/
 
     if( _singulars.at<uint8_t>( last_point ) > _singular_point_threshold &&
          _spent_singular_points.find( last_point ) == _spent_singular_points.end() )
