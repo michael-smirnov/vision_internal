@@ -105,6 +105,15 @@ int main(int argc, char* argv[])
     Mat tr = Mat::zeros(countours.rows, countours.cols, CV_8U);
     Mat crosses = calc_crosses( img_gray );
 
+    Mat dx_sobel, dy_sobel;
+    Sobel(img_gray, dx_sobel, CV_64F, 1, 0);
+    Sobel(img_gray, dy_sobel, CV_64F, 0, 1);
+
+    auto angles = calc_angles( dx_sobel, dy_sobel );
+    draw_angles( angles, wnd_crosses );
+
+    return 0;
+
     imshow(wnd_countours, countours);
     imshow(wnd_crosses, crosses);
 

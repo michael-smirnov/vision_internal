@@ -252,12 +252,12 @@ std::vector<cv::Vec2f> all_directions( int degree )
     return directions;
 }
 
-Mat paint_angles( const Mat& dx, const Mat& dy, double norm_threshold )
+Mat calc_angles( const Mat& dx, const Mat& dy, double norm_threshold )
 {
     if( dx.cols != dy.cols || dx.rows != dy.rows )
         throw runtime_error( "invalid derivative sizes" );
 
-    Mat angles = Mat::zeros(dx.rows, dx.cols, CV_8UC3);
+    Mat angles = Mat::zeros(dx.rows, dx.cols, CV_16S);
     for(int row = 0; row < angles.rows; row++)
     {
         for(int col = 0; col < angles.cols; col++)
@@ -267,24 +267,50 @@ Mat paint_angles( const Mat& dx, const Mat& dy, double norm_threshold )
 
             Vec2d dxdy = {dx_value, dy_value};
             if( norm(dxdy) < norm_threshold )
+            {
+                angles.at<int16_t>(row, col) = -1;
                 continue;
+            }
 
             dxdy = normalize(dxdy);
 
             if(dxdy[1] < 0.0)
-            {
-                uint8_t r = (1.0 - dxdy[0]) / 2.0 * 255;
-                uint8_t g = (1.0 + dxdy[0]) / 2.0 * 255;
-                angles.at<Vec3b>(row, col) = { 0, g, r };
-            }
+                angles.at<int16_t>(row, col) = (1 - dxdy[0]) / 2.0 * 180;
             else
-            {
-                uint8_t r = (1.0 - dxdy[0]) / 2.0 * 255;
-                uint8_t b = (1.0 + dxdy[0]) / 2.0 * 255;
-                angles.at<Vec3b>(row, col) = { b, 0, r };
-            }
+                angles.at<int16_t>(row, col) = (1 + dxdy[0]) / 2.0 * 180 + 180;
         }
     }
 
     return angles;
+}
+
+void draw_angles( const Mat& angles, const string& window_name, int delay )
+{
+    cv::Mat colored_angles = Mat::zeros( angles.rows, angles.cols, CV_8UC3 );
+
+    for(int row = 0; row < angles.rows; row++)
+    {
+        for(int col = 0; col < angles.cols; col++)
+        {
+            int16_t value = angles.at<int16_t>(row, col);
+            if( value < 0 )
+                continue;
+
+            if( value >= 0 && value < 180 )
+            {
+                uint8_t r = (value) / 180.0 * 255;
+                uint8_t g = (180.0 - value) / 180.0 * 255;
+                colored_angles.at<Vec3b>(row, col) = { 0, g, r };
+            }
+            else
+            {
+                uint8_t r = (360.0 - value) / 180.0 * 255;
+                uint8_t b = (value - 180.0) / 180.0 * 255;
+                colored_angles.at<Vec3b>(row, col) = { b, 0, r };
+            }
+        }
+    }
+
+    imshow( window_name, colored_angles );
+    waitKey( delay );
 }
