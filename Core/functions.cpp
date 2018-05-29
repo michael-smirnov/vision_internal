@@ -1,5 +1,8 @@
 #include "functions.h"
 
+using namespace cv;
+using namespace std;
+
 void draw_histogram(const cv::Mat& hist, const cv::Mat& img, const cv::Scalar& color)
 {
 	int hist_w = 256;
@@ -247,4 +250,41 @@ std::vector<cv::Vec2f> all_directions( int degree )
             directions.push_back({col, offset});
 
     return directions;
+}
+
+Mat paint_angles( const Mat& dx, const Mat& dy, double norm_threshold )
+{
+    if( dx.cols != dy.cols || dx.rows != dy.rows )
+        throw runtime_error( "invalid derivative sizes" );
+
+    Mat angles = Mat::zeros(dx.rows, dx.cols, CV_8UC3);
+    for(int row = 0; row < angles.rows; row++)
+    {
+        for(int col = 0; col < angles.cols; col++)
+        {
+            double dx_value = dx.at<double>(row, col);
+            double dy_value = dy.at<double>(row, col);
+
+            Vec2d dxdy = {dx_value, dy_value};
+            if( norm(dxdy) < norm_threshold )
+                continue;
+
+            dxdy = normalize(dxdy);
+
+            if(dxdy[1] < 0.0)
+            {
+                uint8_t r = (1.0 - dxdy[0]) / 2.0 * 255;
+                uint8_t g = (1.0 + dxdy[0]) / 2.0 * 255;
+                angles.at<Vec3b>(row, col) = { 0, g, r };
+            }
+            else
+            {
+                uint8_t r = (1.0 - dxdy[0]) / 2.0 * 255;
+                uint8_t b = (1.0 + dxdy[0]) / 2.0 * 255;
+                angles.at<Vec3b>(row, col) = { b, 0, r };
+            }
+        }
+    }
+
+    return angles;
 }

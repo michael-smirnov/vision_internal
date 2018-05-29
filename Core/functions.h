@@ -30,4 +30,6 @@ cv::Vec2f closest_direction(const cv::Vec2f v, int degree);
 
 std::vector<cv::Vec2f> all_directions( int degree );
 
+cv::Mat paint_angles( const cv::Mat& dx, const cv::Mat& dy, double norm_threshold = 10.0 );
+
 
