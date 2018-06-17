@@ -110,33 +110,9 @@ int main(int argc, char* argv[])
     Sobel(img_gray, dy_sobel, CV_64F, 0, 1);
 
     auto angles = calc_angles( dx_sobel, dy_sobel );
-    draw_angles( angles, wnd_crosses );
+    auto colour_angles = get_colour_angles( angles );
 
-    return 0;
-
-    imshow(wnd_countours, countours);
-    imshow(wnd_crosses, crosses);
-
-    TraceFinder tf { countours, crosses };
-    auto traces = tf.find_traces();
-    std::cout << traces.size() << std::endl;
-
-    for( auto& cur_trace: traces )
-    {
-        Point p = cur_trace.start;
-        tr.at<uint8_t>(p) = 255;
-
-        for( auto& d : cur_trace.directions )
-        {
-            p.x += d[0];
-            p.y += d[1];
-
-            tr.at<uint8_t>(p) = 255;
-        }
-
-    }
-
-    imshow(wnd_trace, tr);
+    imshow( wnd_crosses, colour_angles );
     waitKey();
 
     return 0;

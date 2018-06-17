@@ -98,7 +98,7 @@ Point TraceFinder::max_gradient_singular_point_in_area( const Point& start_singu
 
     while( cos_between_vectors( first_grad, cur_grad ) > 0.7 /*&& cur_norm > 10.0f*/ )
     {
-        if( !is_singular( {cur_point.x + cur_grad[0], cur_point.y + cur_grad[1]} ) )
+        if( !is_singular( {cur_point.x + (int)cur_grad[0], cur_point.y + (int)cur_grad[1]} ) )
         {
             auto directions = all_directions( 3 );
 
@@ -110,7 +110,7 @@ Point TraceFinder::max_gradient_singular_point_in_area( const Point& start_singu
 
                 float cos = cos_between_vectors( first_grad, dir );
                 if( cos > 0.7 &&
-                    is_singular( {cur_point.x + dir[0], cur_point.y + dir[1]} ) &&
+                    is_singular( {cur_point.x + (int)dir[0], cur_point.y + (int)dir[1]} ) &&
                     cos > max_value )
                 {
                     max_value = cos;
@@ -151,7 +151,7 @@ vector<int> TraceFinder::local_directions( const Point& origin )
     {
         auto& v = _area3x3_vectors[i];
         if( dirs[i] > 0.7 &&
-            _spent_regular_points.find( { origin.x + v[0], origin.y + v[1] } ) == _spent_regular_points.end() )
+            _spent_regular_points.find( { origin.x + (int)v[0], origin.y + (int)v[1] } ) == _spent_regular_points.end() )
         {
             result.push_back(i);
         }
@@ -180,7 +180,7 @@ int TraceFinder::global_direction( const Point& origin, const Vec2f direction )
         double cur_value = (0.6*direction_dot + 0.4*direction_value);
 
         if( cur_value > best_value &&
-            _spent_regular_points.find( { origin.x + v[0], origin.y + v[1] } ) == _spent_regular_points.end() )
+            _spent_regular_points.find( { origin.x + (int)v[0], origin.y + (int)v[1] } ) == _spent_regular_points.end() )
         {
             best_direction = i;
             best_value = cur_value;
@@ -242,7 +242,7 @@ void TraceFinder::mark_singular_area( const Point& origin )
 
         for( auto& dir : _area3x3_vectors )
         {
-            mark_singular_area( { origin.x + dir[0], origin.y + dir[1] } );
+            mark_singular_area( { origin.x + (int)dir[0], origin.y + (int)dir[1] } );
         }
     }
 }

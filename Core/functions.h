@@ -32,6 +32,4 @@ std::vector<cv::Vec2f> all_directions( int degree );
 
 cv::Mat calc_angles( const cv::Mat& dx, const cv::Mat& dy, double norm_threshold = 10.0 );
 
-void draw_angles( const cv::Mat& angles, const std::string& window_name, int delay = 0 );
-
-
+cv::Mat get_colour_angles( const cv::Mat& angles );

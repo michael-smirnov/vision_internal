@@ -239,15 +239,15 @@ std::vector<cv::Vec2f> all_directions( int degree )
     int offset = degree / 2;
 
     for(int col = -offset; col <= offset; col++)
-            directions.push_back({col, -offset});
+            directions.push_back({(float)col, -(float)offset});
 
     for(int row = -offset+1; row <= offset-1; row++)
     {
-            directions.push_back({-offset, row});
-            directions.push_back({offset, row});
+            directions.push_back({-(float)offset, (float)row});
+            directions.push_back({ (float)offset, (float)row});
     }
     for(int col = -offset; col <= offset; col++)
-            directions.push_back({col, offset});
+            directions.push_back({ (float)col, (float)offset});
 
     return directions;
 }
@@ -284,7 +284,7 @@ Mat calc_angles( const Mat& dx, const Mat& dy, double norm_threshold )
     return angles;
 }
 
-void draw_angles( const Mat& angles, const string& window_name, int delay )
+Mat get_colour_angles( const Mat& angles )
 {
     cv::Mat colored_angles = Mat::zeros( angles.rows, angles.cols, CV_8UC3 );
 
@@ -311,6 +311,5 @@ void draw_angles( const Mat& angles, const string& window_name, int delay )
         }
     }
 
-    imshow( window_name, colored_angles );
-    waitKey( delay );
+    return colored_angles;
 }

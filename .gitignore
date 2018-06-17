@@ -261,4 +261,7 @@ __pycache__/
 *.pyc
 *.d752bcb
 
-builds/*
+build/*
+samples/*
+3rdparty-build*/
+.vscode/*
