@@ -90,6 +90,59 @@ void trace( const Mat& img, const Point& start_point, Mat& tr, const Point& last
     }
 }
 
+std::vector<int> get_angle_histogram( const cv::Mat& m, uint32_t histogram_length = 36 )
+{
+    vector<int> v( histogram_length, 0 );
+
+    for( int i = 0; i < m.rows; i++ )
+    {
+        for( int j = 0; j < m.cols; j++ )
+        {
+            auto value = m.at<int16_t>( i, j );
+            if( value > 0 )
+            {
+                float normalized_value = static_cast<float>(value) / 360.0f;
+                int bin = normalized_value * (histogram_length-1);
+                v[ bin ]++;
+            }
+        }
+    }
+
+    return v;
+}
+
+std::vector<int> get_massive_histogram_peaks( std::vector<int> histogram, float threshold_persent = 0.1 )
+{
+    int sum = 0;
+    for( auto& element : histogram )
+        sum += element;
+
+    std::vector<int> peaks;
+    int current_peak_sum = 0;
+    for( int i = 0; i < histogram.size(); i++ )
+    {
+        if( histogram[i] > 0 )
+        {
+            current_peak_sum += histogram[i];
+        }
+        else if( current_peak_sum > 0 )
+        {
+            if( current_peak_sum > sum * threshold_persent )
+                peaks.push_back( current_peak_sum );
+            current_peak_sum = 0;
+        }
+    }
+
+    return peaks;
+}
+
+void mouse_callback(int  event, int  x, int  y, int  flag, void *param)
+{
+    if (event == EVENT_MOUSEMOVE) {
+        cout << "(" << x << ", " << y << ")" << endl;
+    }
+}
+
 int main(int argc, char* argv[])
 {
     namedWindow(wnd_countours, WINDOW_NORMAL);
@@ -110,10 +163,53 @@ int main(int argc, char* argv[])
     Sobel(img_gray, dy_sobel, CV_64F, 0, 1);
 
     auto angles = calc_angles( dx_sobel, dy_sobel );
+
+    Mat singulars = Mat::zeros( angles.rows, angles.cols, CV_8UC3 );
+
+    int kernel_size = 5;
+    int offset = kernel_size / 2;
+
+    for( int i = offset; i < angles.rows - offset; i++ )
+    {
+        for( int j = offset; j < angles.cols - offset; j++ )
+        {
+            auto histogram = get_angle_histogram( angles({j-offset, i-offset, kernel_size, kernel_size}) );
+            auto peaks = get_massive_histogram_peaks( histogram, 0.1 );
+
+            if( peaks.size() > 3 )
+                singulars.at<Vec3b>( i, j ) = { 255, 255, 255 };
+
+            /*int sum = 0;
+            int range = 0;
+            int last_not_null_element = -1;
+            for( int i = 0; i < histogram.size(); i++ )
+            {
+                sum += histogram[i];
+                if( histogram[i] > 0 )
+                {
+                    if( last_not_null_element >= 0 )
+                        range += (i-last_not_null_element);
+
+                    last_not_null_element = i;
+                }
+            }
+
+            float sum_threshold = static_cast<float>(kernel_size) * kernel_size * 0.5;
+            float range_threshold = static_cast<float>(histogram.size()) * 0.8;
+
+            if( sum >= sum_threshold &&
+                range >= range_threshold )
+            {
+                singulars.at<Vec3b>( i, j ) = { 255, 255, 255 };
+            }*/
+        }
+    }
+
+    imshow( wnd_crosses, singulars );
+    setMouseCallback( wnd_countours, mouse_callback );
     auto colour_angles = get_colour_angles( angles );
 
     imshow( wnd_crosses, colour_angles );
     waitKey();
-
     return 0;
 }
