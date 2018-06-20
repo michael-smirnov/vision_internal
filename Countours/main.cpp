@@ -288,7 +288,7 @@ int main(int argc, char* argv[])
     int kernel_size = 5;
     int offset = kernel_size / 2;
 
-    /*for( int i = offset; i < angles.rows - offset; i++ )
+    for( int i = offset; i < angles.rows - offset; i++ )
     {
         for( int j = offset; j < angles.cols - offset; j++ )
         {
@@ -302,7 +302,15 @@ int main(int argc, char* argv[])
             else if( peaks.size() > 3 )
                 singulars.at<Vec3b>( i, j ) = { 255, 255, 255 };
         }
-    }*/
+    }
+    /*
+    Mat d2x, d2y, mg2;
+    Sobel( img_magnitude, d2x, CV_64F, 1, 0 );
+    Sobel( img_magnitude, d2y, CV_64F, 0, 1 );
+
+    cv::sqrt( d2x.mul(d2x) + d2y.mul(d2y), mg2 );
+    Mat img_mg2;
+    mg2.convertTo( img_mg2, CV_8U );
 
     for( int i = offset; i < mag_sobel.rows - offset; i++ )
     {
@@ -312,16 +320,18 @@ int main(int argc, char* argv[])
             if( p > 0.5 )
             {
                 imshow( wnd_area, img_magnitude({j-offset, i-offset, kernel_size, kernel_size}) );
+                imshow( wnd_trace, img_mg2({j-offset, i-offset, kernel_size, kernel_size}) );
+
                 waitKey();
             }
-            singulars.at<Vec3b>( i, j ) = { 255 * p, 255 * p, 255 * p };
+            singulars.at<Vec3b>( i, j ) = { (uchar)(255 * p), (uchar)(255 * p), (uchar)(255 * p) };
         }
-    }
+    }*/
 
     setMouseCallback( wnd_countours, mouse_callback );
 
     imshow( wnd_countours, colour_angles );
-    imshow( wnd_crosses, singulars + colour_angles );
+    imshow( wnd_crosses, singulars );
 
     waitKey();
     return 0;
