@@ -1,8 +1,10 @@
 #include "functions.h"
 #include "ComponentMarker.h"
 #include "TraceFinder.h"
+
 #include <iostream>
 #include <vector>
+#include <exception>
 
 using namespace std;
 using namespace cv;
@@ -99,7 +101,7 @@ std::vector<int> get_angle_histogram( const cv::Mat& m, uint32_t histogram_lengt
         for( int j = 0; j < m.cols; j++ )
         {
             auto value = m.at<int16_t>( i, j );
-            if( value > 0 )
+            if( value >= 0 )
             {
                 float normalized_value = static_cast<float>(value) / 360.0f;
                 int bin = normalized_value * (histogram_length-1);
@@ -136,9 +138,121 @@ std::vector<int> get_massive_histogram_peaks( std::vector<int> histogram, float 
     return peaks;
 }
 
-void mouse_callback(int  event, int  x, int  y, int  flag, void *param)
+int get_median_index_only_by_increment( std::vector<int> histogram, int half_window, int start_index )
 {
-    if (event == EVENT_MOUSEMOVE) {
+    int cur_index = start_index;
+
+    int sum = histogram[cur_index];
+    for( int j = cur_index + 1; j < histogram.size() && j < cur_index + 1 + half_window; j++ )
+        sum += histogram[j];
+
+    int k = histogram[cur_index];
+    while( k < sum / 2 )
+    {
+        cur_index++;
+        k += histogram[cur_index];
+    }
+
+    return cur_index;
+}
+
+int get_median_index_by_center( std::vector<int> histogram, int half_window, int center_index )
+{
+    int last_histogram_index = histogram.size() - 1;
+
+    int start_index = max( 0, center_index - half_window );
+    int end_index = min( last_histogram_index, center_index + half_window );
+
+    int sum = 0;
+    for( int i = start_index; i <= end_index; i++ )
+        sum += histogram[i];
+
+    if( sum == 1 )
+        return center_index;
+
+    int cur_index = start_index;
+
+    int k = histogram[cur_index];
+    while( k < sum / 2 )
+    {
+        cur_index++;
+        k += histogram[cur_index];
+    }
+
+    return cur_index;
+}
+
+std::vector<int> get_most_valuable_arguments( std::vector<int> histogram, int half_window )
+{
+    std::vector<int> args;
+
+    int i = 0;
+    while( i < histogram.size() )
+    {
+        if( histogram[i] == 0 )
+            i++;
+        else
+        {
+            i = get_median_index_only_by_increment( histogram, half_window, i );
+            i = get_median_index_by_center( histogram, half_window, i );
+
+            args.push_back( i );
+            i += half_window + 1;
+        }
+    }
+
+    return args;
+}
+
+float get_probability_of_center_is_end_point( const Mat& m, double value_percent = 0.9 )
+{
+    if( m.rows != m.cols )
+        throw runtime_error( "nonsquare matrix" );
+
+    if( m.type() != CV_64F )
+        throw runtime_error( "invalid type of matrix" );
+
+    std::vector<Vec2i> dir =
+    {
+        { -1, -1 },
+        {  0, -1 },
+        {  1, -1 },
+        { -1,  0 },
+        {  1,  0 },
+        { -1,  1 },
+        {  0,  1 },
+        {  1,  1 },
+    };
+
+    std::vector<int> max_distance( dir.size(), -1 );
+
+    int distance_range = m.rows / 2;
+    double center_element = m.at<double>( distance_range, distance_range );
+
+    int count_of_not_initialized_values = 0;
+    for( int i = 0; i < dir.size(); i++ )
+    {
+        for( int j = 1; j <= distance_range; j++ )
+        {
+            double current_element = m.at<double>( distance_range + dir[i][1], distance_range + dir[i][0] );
+            if( current_element / center_element < value_percent )
+            {
+                max_distance[i] = j-1;
+                break;
+            }
+        }
+
+        if( max_distance[i] < 0 )
+            count_of_not_initialized_values++;
+    }
+
+    return /*1.0 - static_cast<double>(count_of_not_initialized_values) / dir.size()*/ count_of_not_initialized_values == 7 ? 1.0f : 0.0f;
+}
+
+void mouse_callback( int event, int x, int y, int flag, void* param )
+{
+    if (event == EVENT_MOUSEMOVE)
+    {
         cout << "(" << x << ", " << y << ")" << endl;
     }
 }
@@ -158,58 +272,57 @@ int main(int argc, char* argv[])
     Mat tr = Mat::zeros(countours.rows, countours.cols, CV_8U);
     Mat crosses = calc_crosses( img_gray );
 
-    Mat dx_sobel, dy_sobel;
+    Mat dx_sobel, dy_sobel, mag_sobel;
     Sobel(img_gray, dx_sobel, CV_64F, 1, 0);
     Sobel(img_gray, dy_sobel, CV_64F, 0, 1);
 
+    cv::sqrt( dx_sobel.mul(dx_sobel) + dy_sobel.mul(dy_sobel), mag_sobel );
+    Mat img_magnitude;
+    mag_sobel.convertTo( img_magnitude, CV_8UC3 );
+
     auto angles = calc_angles( dx_sobel, dy_sobel );
+    auto colour_angles = get_colour_angles( angles );
 
     Mat singulars = Mat::zeros( angles.rows, angles.cols, CV_8UC3 );
 
     int kernel_size = 5;
     int offset = kernel_size / 2;
 
-    for( int i = offset; i < angles.rows - offset; i++ )
+    /*for( int i = offset; i < angles.rows - offset; i++ )
     {
         for( int j = offset; j < angles.cols - offset; j++ )
         {
             auto histogram = get_angle_histogram( angles({j-offset, i-offset, kernel_size, kernel_size}) );
-            auto peaks = get_massive_histogram_peaks( histogram, 0.1 );
+            auto peaks = get_most_valuable_arguments( histogram, 5 );
 
-            if( peaks.size() > 3 )
+            if( peaks.size() == 2 )
+                singulars.at<Vec3b>( i, j ) = { 100, 100, 100 };
+            else if( peaks.size() == 3 )
+                singulars.at<Vec3b>( i, j ) = { 180, 180, 180 };
+            else if( peaks.size() > 3 )
                 singulars.at<Vec3b>( i, j ) = { 255, 255, 255 };
+        }
+    }*/
 
-            /*int sum = 0;
-            int range = 0;
-            int last_not_null_element = -1;
-            for( int i = 0; i < histogram.size(); i++ )
+    for( int i = offset; i < mag_sobel.rows - offset; i++ )
+    {
+        for( int j = offset; j < mag_sobel.cols - offset; j++ )
+        {
+            float p = get_probability_of_center_is_end_point( mag_sobel({j-offset, i-offset, kernel_size, kernel_size}) );
+            if( p > 0.5 )
             {
-                sum += histogram[i];
-                if( histogram[i] > 0 )
-                {
-                    if( last_not_null_element >= 0 )
-                        range += (i-last_not_null_element);
-
-                    last_not_null_element = i;
-                }
+                imshow( wnd_area, img_magnitude({j-offset, i-offset, kernel_size, kernel_size}) );
+                waitKey();
             }
-
-            float sum_threshold = static_cast<float>(kernel_size) * kernel_size * 0.5;
-            float range_threshold = static_cast<float>(histogram.size()) * 0.8;
-
-            if( sum >= sum_threshold &&
-                range >= range_threshold )
-            {
-                singulars.at<Vec3b>( i, j ) = { 255, 255, 255 };
-            }*/
+            singulars.at<Vec3b>( i, j ) = { 255 * p, 255 * p, 255 * p };
         }
     }
 
-    imshow( wnd_crosses, singulars );
     setMouseCallback( wnd_countours, mouse_callback );
-    auto colour_angles = get_colour_angles( angles );
 
-    imshow( wnd_crosses, colour_angles );
+    imshow( wnd_countours, colour_angles );
+    imshow( wnd_crosses, singulars + colour_angles );
+
     waitKey();
     return 0;
 }
