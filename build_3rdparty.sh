@@ -39,7 +39,7 @@ function InstallBuildVariables
         BuildCmd="$BuildSystem ALL_BUILD.vcxproj //p:Configuration=$Configuration //m"
         InstallCmd="$BuildSystem INSTALL.vcxproj //p:Configuration=$Configuration //m"
     elif [ $BuildSystem == "mingw32-make" ]; then
-        CmakeAdditionalFlags='-D CMAKE_SH="CMAKE_SH-NOTFOUND" -D ENABLE_PRECOMPILED_HEADERS=OFF -D WITH_IPP=OFF -D WITH_TBB=OFF -D WITH_MSMF=OFF -G "MinGW Makefiles"'
+        CmakeAdditionalFlags='-D CMAKE_CXX_FLAGS_DEBUG="-Wa,-mbig-obj" CMAKE_C_FLAGS_DEBUG="-Wa,-mbig-obj" -D CMAKE_SH="CMAKE_SH-NOTFOUND" -D ENABLE_PRECOMPILED_HEADERS=OFF -D WITH_IPP=OFF -D WITH_TBB=OFF -D WITH_MSMF=OFF -G "MinGW Makefiles"'
         BuildCmd="$BuildSystem -j $ProcessesCount"
         InstallCmd="$BuildSystem install"
     elif [ $BuildSystem == "make" ]; then
