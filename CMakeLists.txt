@@ -22,4 +22,6 @@ find_library (OpenCVWorld-Debug opencv_world400d PATHS 3rdparty-build-Debug/x64/
 find_library (OpenCVWorld-Release opencv_world400 PATHS 3rdparty-build-Release/x64/${3RDPARTY_LIBS})
 
 add_subdirectory (Core)
+add_subdirectory (Autofocus)
+add_subdirectory (BackgroundRecognition)
 add_subdirectory (Countours)

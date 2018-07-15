@@ -1,14 +1,21 @@
 #include "AverageCalculator.h"
-#include "functions.h"
+#include "ImageProcessor.h"
+#include "Statistics.h"
+#include "Utility.h"
+
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+
+using namespace vision;
 
 int main(int argc, char* argv[])
 {
     char* video_file = argv[1];
-    const int AVERAGE_FRAMES = 60;
+    const int AVERAGE_FRAMES = 120;
 
 	AverageCalculator calculator(AVERAGE_FRAMES);
     cv::VideoCapture capture(video_file);
-    cv::Mat frame;
+    Mat frame;
 
     cv::namedWindow("video", cv::WINDOW_NORMAL);
     cv::namedWindow("contours", cv::WINDOW_NORMAL);
@@ -17,7 +24,7 @@ int main(int argc, char* argv[])
     cv::waitKey();
 
 	capture >> frame;
-	cv::resize(frame, frame, { 640, 480 });
+	cv::resize(frame, frame, { 320, 240 });
 	calculator.add_frame(frame);
 
 	char key = 0;
@@ -28,21 +35,20 @@ int main(int argc, char* argv[])
 		if (frame.empty())
 			break;
 
-		cv::resize(frame, frame, { 640, 480 });
+		cv::resize(frame, frame, { 320, 240 });
 		
-		float median_frame = median(frame);
-		float median_average = median(calculator.get_average());
+		float median_frame = Statistics::median(frame);
+		float median_average = Statistics::median(calculator.get_average());
 
 		cv::Mat frame_adjusted;
 		frame.convertTo(frame_adjusted, CV_32FC3);
-		frame_adjusted *= median_average / median_frame;
+        frame_adjusted *= median_average / median_frame;
         cv::medianBlur(frame_adjusted, frame_adjusted, 5);
 
 		calculator.add_frame(frame_adjusted);
 
 		auto average = calculator.get_average();
-        auto avg_countours = calc_countours(average, 5);
-        auto frame_countours = calc_countours(frame_adjusted, 5);
+        auto avg_countours = ImageProcessor::countours( average, 5 );
 
         int channels[] = { 0 };
         int histSize[] = { 256 };
@@ -51,12 +57,12 @@ int main(int argc, char* argv[])
 
         avg_countours *= 10;
 
-        cv::Mat histogram;
-        cv::calcHist(&avg_countours, 1, channels, cv::Mat(), histogram, 1, histSize, &ranges );
-        draw_histogram( histogram, avg_countours, cv::Scalar(255,255,255) );
+        Mat histogram;
+        cv::calcHist( &avg_countours, 1, channels, Mat(), histogram, 1, histSize, &ranges );
+        Utility::add_histogram( histogram, Scalar(255,255,255), avg_countours );
 
         cv::imshow("video", frame);
-        cv::imshow("average", frame_countours - avg_countours);
+        cv::imshow("average", average);
         cv::imshow("contours", avg_countours);
 
         key = cv::waitKey(1);
