@@ -177,7 +177,7 @@ int main(int argc, char* argv[])
             float err = 0.0f;
             for( int m = 0; m < peaks.size(); m++ )
                 err += std::pow( peaks[m].values_percent_in_moda - p, 2.0f );
-            k = std::sqrtf( err );
+            k = std::sqrt( err );
 
             int grade = peaks.size() > 5 ? 3 : peaks.size() - 2;
             uchar peaks_grades[] = { 20, 50, 150, 255 };

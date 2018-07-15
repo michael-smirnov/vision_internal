@@ -43,7 +43,7 @@ function InstallBuildVariables
         BuildCmd="$BuildSystem -j $ProcessesCount"
         InstallCmd="$BuildSystem install"
     elif [ $BuildSystem == "make" ]; then
-        CmakeAdditionalFlags='-D ENABLE_PRECOMPILED_HEADERS=OFF -D WITH_IPP=OFF -D WITH_TBB=OFF -D WITH_MSMF=OFF -G "MinGW Makefiles"'
+        CmakeAdditionalFlags='-D ENABLE_PRECOMPILED_HEADERS=OFF -D WITH_IPP=OFF -D WITH_TBB=OFF -D WITH_MSMF=OFF -G "Unix Makefiles"'
         BuildCmd="$BuildSystem -j $ProcessesCount"
         InstallCmd="$BuildSystem install"
     else
