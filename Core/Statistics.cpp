@@ -71,4 +71,14 @@ namespace vision
 
         deviation = std::max((max_loc - left_loc), (right_loc - max_loc));
     }
+
+    int Statistics::sum( const std::vector<int>& v )
+    {
+        int sum_value = 0;
+
+        for( int j = 0; j < v.size(); j++ )
+            sum_value += v[j];
+
+        return sum_value;
+    }
 }

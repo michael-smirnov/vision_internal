@@ -2,6 +2,8 @@
 
 #include "types.h"
 
+#include <vector>
+
 namespace vision
 {
   class ImageProcessor
@@ -25,10 +27,41 @@ namespace vision
                         const Mat& vertical_filter,
                         int zero_value_threshold = 200 );
 
+    template< typename VALUE_TYPE >
+    static std::vector<int> get_histogram( const cv::Mat& m, 
+                                           const VALUE_TYPE min_value,
+                                           const VALUE_TYPE max_value,
+                                           uint32_t histogram_length );
+
     static Mat dxdy_argument( const Mat& src_dx, 
                               const Mat& src_dy, 
                               float min_magnitude = 10.0f );
   private:
     ImageProcessor() {}
   };
+
+  template< typename VALUE_TYPE >
+  std::vector<int> ImageProcessor::get_histogram( const cv::Mat& m, 
+                                                  const VALUE_TYPE min_value,
+                                                  const VALUE_TYPE max_value,
+                                                  uint32_t histogram_length )
+  {
+      vector<int> v( histogram_length, 0 );
+
+      for( int i = 0; i < m.rows; i++ )
+      {
+          for( int j = 0; j < m.cols; j++ )
+          {
+              auto value = m.at<VALUE_TYPE>( i, j );
+              if( value >= min_value )
+              {
+                  float normalized_value = static_cast<float>(value - min_value) / max_value;
+                  int bin = normalized_value * (histogram_length-1);
+                  v[ bin ]++;
+              }
+          }
+      }
+
+      return v;
+  }
 }

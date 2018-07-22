@@ -2,6 +2,8 @@
 
 #include "types.h"
 
+#include <vector>
+
 namespace vision
 {
     class Statistics
@@ -13,6 +15,7 @@ namespace vision
                                           float stddev_value_threshold, 
                                           float& max, 
                                           float& deviation );
+        static int sum( const std::vector<int>& );
     private:
         Statistics() {}
     };
