@@ -46,7 +46,7 @@ namespace vision
                                                   const VALUE_TYPE max_value,
                                                   uint32_t histogram_length )
   {
-      vector<int> v( histogram_length, 0 );
+      std::vector<int> v( histogram_length, 0 );
 
       for( int i = 0; i < m.rows; i++ )
       {
