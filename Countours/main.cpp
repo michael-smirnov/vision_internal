@@ -39,12 +39,9 @@ int main(int argc, char* argv[])
     cvtColor(img, img_gray, COLOR_BGR2GRAY);
 
     Mat countours = ImageProcessor::countours( img_gray, 3 );
-    Mat tr = Mat::zeros( countours.rows, countours.cols, CV_8U );
 
     auto horizontal_filter = MathItemGenerator::matrix_by_row( { 0.0f, 1.0f, 4.0f, -1.0f, -8.0f, -1.0f, 4.0f, 1.0f, 0.0f } );
 	auto vertical_filter = horizontal_filter.t();
-
-    Mat crosses = ImageProcessor::crosses( img_gray, horizontal_filter, vertical_filter );
 
     Mat dx_sobel, dy_sobel, mag_sobel;
     ImageProcessor::dxdy_sobel( img_gray, 1, 1, dx_sobel, dy_sobel );
