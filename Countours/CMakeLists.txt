@@ -4,7 +4,8 @@ include_directories ("${PROJECT_SOURCE_DIR}/Core")
 include_directories ("${PROJECT_SOURCE_DIR}/3rdparty-build-Debug/include")
 
 add_executable (Countours main.cpp
-                          HistogramModaCalculator.cpp)
+                          HistogramModaCalculator.cpp
+                          SingularPointsFinder.cpp)
 
 set_property (TARGET Countours PROPERTY CXX_STANDARD 17)
 target_link_libraries (Countours Core)
