@@ -42,11 +42,16 @@ int main(int argc, char* argv[])
     auto colour_angles = MathItemGenerator::color_map_matrix( angles, 0, 360 );
     auto singulars = singularsFinder.calc_singular_map();
 
+    double max_singular = 0.0f;
+    minMaxLoc( singulars, nullptr, &max_singular );
+
+    Mat singular_map = singulars / max_singular;
+
     setMouseCallback( wnd_crosses, mouse_callback );
 
     imshow( wnd_countours, countours );
     imshow( wnd_trace, colour_angles );
-    imshow( wnd_crosses, singulars );
+    imshow( wnd_crosses, singular_map );
 
     waitKey();
     return 0;

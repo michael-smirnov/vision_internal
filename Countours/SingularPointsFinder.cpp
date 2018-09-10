@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <opencv2/highgui.hpp>
+#include <iostream>
 
 namespace vision
 {
@@ -25,7 +26,7 @@ namespace vision
     {
         auto angles = calc_countour_angles();
 
-        Mat singulars = Mat::zeros( angles.rows, angles.cols, CV_8U );
+        Mat singulars = Mat::zeros( angles.rows, angles.cols, CV_32F );
 
         int kernel_size = 5;
         int offset = kernel_size / 2;
@@ -35,13 +36,6 @@ namespace vision
             for( int j = offset; j < angles.cols - offset; j++ )
             {
                 auto area = angles( {j-offset, i-offset, kernel_size, kernel_size} );
-
-                /*if( i == 362 && j == 295 )
-                {
-                     auto colour_angles = MathItemGenerator::color_map_matrix( area, 0, 360 );
-                     cv::imshow("trace", colour_angles);
-                     cv::waitKey();
-                }*/
 
                 std::vector<int> sorted_area = {};
                 //counting sort
@@ -65,9 +59,8 @@ namespace vision
                     for( int i = 1; i < sorted_area.size()-1; i++ )
                     {
                         int distance_left = sorted_area[i] - sorted_area[i-1];
-                        int distance_right = sorted_area[i+1] - sorted_area[i];
 
-                        if( /*distance_left <= distance_right &&*/ distance_left < _max_angles_difference_in_cluster )
+                        if( distance_left < _max_angles_difference_in_cluster )
                             clusters[ clusters.size()-1 ]++;
                         else
                             clusters.push_back( 1 );
@@ -85,19 +78,42 @@ namespace vision
                 float singular_point_weight = 0.0f;
                 for( int i = 0; i < clusters.size(); i++ )
                 {
-                    int v1 = sorted_area.size() - clusters[i] * clusters.size();
-                    int v2 = sorted_area.size();
-
-                    float cluster_weight = static_cast<float>(v1*v1) / static_cast<float>(v2*v2);
+                    float cluster_weight = this->cluster_weight( sorted_area.size() / clusters.size(),
+                                                                 clusters[i],
+                                                                 clusters.size() );
 
                     singular_point_weight += cluster_weight;
                 }
-                singular_point_weight *= (clusters.size() - 1);
+                singular_point_weight *= sorted_area.size();
 
-                singulars.at<uint8_t>( i, j ) = static_cast<uint8_t>( singular_point_weight*10 );
+                singulars.at<float>( i, j ) = singular_point_weight;
             }
         }
 
         return singulars;
+    }
+
+    float SingularPointsFinder::cluster_weight( int optimal_values_count, int values_count, int cluster_size ) const
+    {
+        int difference = std::abs(optimal_values_count - values_count);
+        float percent_diff = static_cast<float>(difference) / cluster_size;
+
+        float err = 0.0f;
+        if( percent_diff < 0.1f )
+            err = 0.0f;
+        else if( percent_diff < 0.15f )
+            err = 0.1f;
+        else if( percent_diff < 0.2f )
+            err = 0.3f;
+        else if( percent_diff < 0.3f )
+            err = 0.5f;
+        else if( percent_diff < 0.5f )
+            err = 0.7f;
+        else if( percent_diff < 0.6f )
+            err = 0.9f;
+        else 
+            err = 1.0f;
+
+        return 1.0f - err;
     }
 }
