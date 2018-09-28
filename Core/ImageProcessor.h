@@ -28,7 +28,7 @@ namespace vision
                         int zero_value_threshold = 200 );
 
     template< typename VALUE_TYPE >
-    static std::vector<int> get_histogram( const cv::Mat& m, 
+    static std::vector<int> histogram( const Mat& m, 
                                            const VALUE_TYPE min_value,
                                            const VALUE_TYPE max_value,
                                            uint32_t histogram_length );
@@ -36,12 +36,19 @@ namespace vision
     static Mat dxdy_argument( const Mat& src_dx, 
                               const Mat& src_dy, 
                               float min_magnitude = 10.0f );
+
+    static std::vector<Point2i> local_maximums( const Mat& m, float diff_threshold = 0.0f );
+
+    static void min_gradient_direction( Mat& min_grad_dirs, Mat& min_grad_weight, const Mat& dxdy_magn, int window_size );
+    
+    static Mat diff_vec_norm_by_direction( const Mat& dirs, int window_size );
+
   private:
     ImageProcessor() {}
   };
 
   template< typename VALUE_TYPE >
-  std::vector<int> ImageProcessor::get_histogram( const cv::Mat& m, 
+  std::vector<int> ImageProcessor::histogram( const cv::Mat& m, 
                                                   const VALUE_TYPE min_value,
                                                   const VALUE_TYPE max_value,
                                                   uint32_t histogram_length )

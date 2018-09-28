@@ -9,6 +9,7 @@ namespace vision
     
     using Point = cv::Point;
     using Point2i = cv::Point2i;
+    using Point2d = cv::Point2d;
 
     using Mat = cv::Mat;
     using Matx33d = cv::Matx33d;
